@@ -13,6 +13,7 @@
 # Please provide feedback in our support forum if you encountered difficulties.
 ################################################################################
 # read in functions shared by installer and uninstaller
+CLONE_PATH=$(pwd)
 source $(dirname "$0")/install-utilities.sh
 
 
@@ -29,8 +30,11 @@ function check_supported_os()
     VERSION="$(lsb_release -r 2>/dev/null | awk '{ print $2 }' | sed 's/[.]//')"
     OS_DISTRO="${DISTRO:-INVALID}"
     OS_VERSION="${VERSION:-255}"
-    if [ "${OS_DISTRO,,}" = "ubuntu" ] && [ ${OS_VERSION} = 1604 ]; then
-        [ "${VERBOSE}" = "yes" ] && echo "Installing on Ubuntu 16.04"
+    if [ "${OS_DISTRO,,}" = "ubuntu" ]; then
+        if [ ${OS_VERSION} = 1604 ]; then
+            [ "${VERBOSE}" = "yes" ] && echo "Installing on Ubuntu 16.04"
+        elif [ ${OS_VERSION} = 1801 ]; then
+            [ "${VERBOSE}" = "yes" ] && echo "Installing on Ubuntu 18.01"
     elif [ "${OS_DISTRO,,}" = "raspbian" ] && [ ${OS_VERSION} -ge 91 ]; then
         [ "${VERBOSE}" = "yes" ] && echo "Installing on Raspbian Stretch"
     elif [ "${OS_DISTRO,,}" = "raspbian" ] && [ ${OS_VERSION} -ge 80 ] && [ ${OS_VERSION} -lt 90 ]; then
@@ -220,6 +224,8 @@ download_filename=NCSDK-2.08.01.02.tar.gz
     ${SUDO_PREFIX} cp ${FROM_DIR}/requirements.txt ${INSTALL_DIR}/NCSDK 
     ${SUDO_PREFIX} cp ${FROM_DIR}/requirements_apt.txt ${INSTALL_DIR}/NCSDK 
     ${SUDO_PREFIX} cp ${FROM_DIR}/requirements_apt_raspbian.txt ${INSTALL_DIR}/NCSDK 
+
+    ${SUDO_PREFIX} cp -r ${INSTALL_DIR}/NCSDK/ncsdk-{armv7l,aarch64}
 }
 
 
@@ -683,8 +689,16 @@ function install_api()
     # Copy firmware(FW) to destination
     $SUDO_PREFIX cp $SDK_DIR/fw/MvNCAPI-*.mvcmd $SYS_INSTALL_DIR/lib/mvnc/
 
+    # Compile native version of api library
+    pushd "$CLONE_PATH"/api/src &>/dev/null
+    eval make -j $MAKE_NJOBS
+    cp $SDK_DIR/fw/MvNCAPI-*.mvcmd mvnc/
+    $SUDO_PREFIX make install
+    popd &>/dev/null
+
     # Copy C API to destination
-    $SUDO_PREFIX cp $FROM_DIR/api/include/mvnc.h $SYS_INSTALL_DIR/include/mvnc2    
+    $SUDO_PREFIX cp $FROM_DIR/api/include/mvnc.h $SYS_INSTALL_DIR/include/mvnc2
+    $SUDO_PREFIX cp $SYS_INSTALL_DIR/lib/libmvnc.so.0 $SDK_DIR/api/c/
     $SUDO_PREFIX cp $SDK_DIR/api/c/libmvnc.so.0 $SYS_INSTALL_DIR/lib/mvnc/
 
     if [ -f $SDK_DIR/api/c/libmvnc_highclass.so.0 ] ; then

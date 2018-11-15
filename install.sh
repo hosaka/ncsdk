@@ -35,6 +35,8 @@ function check_supported_os()
             [ "${VERBOSE}" = "yes" ] && echo "Installing on Ubuntu 16.04"
         elif [ ${OS_VERSION} = 1801 ]; then
             [ "${VERBOSE}" = "yes" ] && echo "Installing on Ubuntu 18.01"
+        else
+            [ "${VERBOSE}" = "yes" ] && echo "Unsupported Ubuntu version"
     elif [ "${OS_DISTRO,,}" = "raspbian" ] && [ ${OS_VERSION} -ge 91 ]; then
         [ "${VERBOSE}" = "yes" ] && echo "Installing on Raspbian Stretch"
     elif [ "${OS_DISTRO,,}" = "raspbian" ] && [ ${OS_VERSION} -ge 80 ] && [ ${OS_VERSION} -lt 90 ]; then
